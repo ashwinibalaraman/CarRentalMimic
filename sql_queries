@@ -1,0 +1,39 @@
+INSERT INTO m_analytical_db.dim_car (car_vin, car_id, brand, model, type, no_of_passengers, no_of_bags) SELECT a.car_vin, c.car_id, c.brand, c.model, c.type, c.no_of_passengers, c.no_of_bags FROM mockaroo_db.all_cars a, mockaroo_db.car_details c WHERE a.car_id = c.car_id 
+
+
+INSERT INTO m_analytical_db.dim_time (full_date, day_of_week, day_of_month, month, quarter, year) SELECT r.from_date, 1, 1, 1, 'Q1', 2016 FROM mockaroo_db.reservation r
+
+UPDATE dim_time SET month = 3 WHERE MONTH(full_date) = 3 
+
+UPDATE dim_time SET day_of_month = DAYOFMONTH(full_date)
+
+UPDATE dim_time SET quarter = 'Q2' WHERE month > 3 AND month < 7 
+
+
+INSERT INTO m_analytical_db.fact_reservation_bookings (reservation_id, bill_amount, rental_days, store_key, car_key, cust_key, time_key) 
+SELECT r.reservation_id, r.bill_amount, r.rental_days, s.store_key, c.car_key, cs.cust_key, t.time_key
+FROM mockaroo_db.reservation r, m_analytical_db.dim_store s, m_analytical_db.dim_car c, m_analytical_db.dim_customer cs, m_analytical_db.dim_time t 
+WHERE r.store_id = s.store_id AND r.car_vin = c.car_vin AND r.customer_id = cs.cust_id AND r.from_date = t.full_date
+
+UPDATE fact_car_purchase SET time_key = (RAND() * 400);
+
+
+
+
+
+Queries
+
+SELECT d.year, d.quarter, sum(p.bill_amount) FROM fact_reservation_bookings p, dim_store s, dim_time d, dim_car c WHERE c.car_key = p.car_key AND p.time_key = d.time_key and d.year = "2015" GROUP By d.year, d.quarter ORDER BY d.year, d.quarter 
+
+
+SELECT d.year, d.quarter, sum(p.bill_amount) FROM fact_reservation_bookings p, dim_store s, dim_time d, dim_car c WHERE c.car_key = p.car_key AND p.time_key = d.time_key GROUP By d.year, d.quarter ORDER BY d.year, d.quarter 
+
+SELECT d.year, d.quarter, d.month, sum(p.bill_amount) as monthly_earning FROM fact_reservation_bookings p, dim_store s, dim_time d, dim_car c WHERE c.car_key = p.car_key AND p.time_key = d.time_key AND d.year= "2016" GROUP By d.year, d.quarter, d.month ORDER BY d.year, d.quarter, d.month 
+
+SELECT s.city, c.brand, d.quarter, sum(p.bill_amount) as area_earning FROM fact_reservation_bookings p, dim_store s, dim_time d, dim_car c WHERE c.car_key = p.car_key AND p.time_key = d.time_key GROUP By s.city, c.brand, d.quarter 
+
+SELECT s.city, c.brand, d.quarter, sum(p.bill_amount) as area_earning FROM fact_reservation_bookings p, dim_store s, dim_time d, dim_car c WHERE c.car_key = p.car_key AND p.time_key = d.time_key AND c.brand = "Nissan" GROUP By s.city, c.brand, d.quarter 
+
+SELECT s.city, c.brand, d.quarter, sum(p.bill_amount) as area_earning FROM fact_reservation_bookings p, dim_store s, dim_time d, dim_car c WHERE c.car_key = p.car_key AND p.time_key = d.time_key AND (c.brand = "Nissan" OR c.brand = "Lexus") AND (d.quarter = "Q1" OR d.quarter = "Q2") GROUP By s.city, c.brand, d.quarter 
+
+
